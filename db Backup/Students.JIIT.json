@@ -1,0 +1,310 @@
+[
+  {
+    "_id": {
+      "$oid": "65bccc7b8be314339650fc1b"
+    },
+    "Username": "992401030147",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "AYUSHI MAHESHWARI"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc7c8be314339650fc1c"
+    },
+    "Username": "992401030148",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "KARTAVYA GUPTA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc7d8be314339650fc1d"
+    },
+    "Username": "992401030149",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "GAUTAM GARG"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc7e8be314339650fc1e"
+    },
+    "Username": "992401030150",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "PARTH MISHRA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc7f8be314339650fc1f"
+    },
+    "Username": "992401030151",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ADITYA RAJ"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc808be314339650fc20"
+    },
+    "Username": "992401030152",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "YASHWARDHAN SINGH RATHORE"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc818be314339650fc21"
+    },
+    "Username": "992401030153",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ROUSHAN KUMAR SHARMA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc828be314339650fc22"
+    },
+    "Username": "992401030154",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ARYAN VARSHNEY"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc838be314339650fc23"
+    },
+    "Username": "992401030155",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "AMAN SATIJA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc848be314339650fc24"
+    },
+    "Username": "992401030156",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "PRIYANSH BEDI"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc858be314339650fc25"
+    },
+    "Username": "992401030158",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "HEMANT"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc868be314339650fc26"
+    },
+    "Username": "992401030159",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "MAYANK CHOUDHARY"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc878be314339650fc27"
+    },
+    "Username": "992401030160",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "RAGHAV GUPTA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc888be314339650fc28"
+    },
+    "Username": "992401030161",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "UTKARSH MISHRA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc898be314339650fc29"
+    },
+    "Username": "992401030162",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "NAMAN ARORA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8a8be314339650fc2a"
+    },
+    "Username": "992401030163",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "HARSHIT KUMAR SINGH"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8b8be314339650fc2b"
+    },
+    "Username": "992401030164",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ANERI GUPTA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8c8be314339650fc2c"
+    },
+    "Username": "992401030165",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ISHAN MEHROTRA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8d8be314339650fc2d"
+    },
+    "Username": "992401030166",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "TAPOBRATA SARKAR"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8e8be314339650fc2e"
+    },
+    "Username": "992401030167",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "SHASHWAT MISHRA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc8f8be314339650fc2f"
+    },
+    "Username": "992401030168",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "HARSH VARDHAN SINGH"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc908be314339650fc30"
+    },
+    "Username": "992401030169",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "ADHIRA SETHI"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc918be314339650fc31"
+    },
+    "Username": "992401030170",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "PARI SHREE GUPTA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc928be314339650fc32"
+    },
+    "Username": "992401030171",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "SOUMIL GARG"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc938be314339650fc33"
+    },
+    "Username": "992401030172",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "VAMIKA AGARWAL"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc948be314339650fc34"
+    },
+    "Username": "992401030173",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "TARUSHI GOEL"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc958be314339650fc35"
+    },
+    "Username": "992401030174",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "AMAN MISHRA"
+  },
+  {
+    "_id": {
+      "$oid": "65bccc968be314339650fc36"
+    },
+    "Username": "992401030175",
+    "Password": "123",
+    "Institution": "JIIT",
+    "Batch": "F14",
+    "Year": "Second Year",
+    "Name": "KARTIK KALP PANDEY"
+  }
+]

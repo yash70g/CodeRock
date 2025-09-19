@@ -1,0 +1,4 @@
+```
+REACT_APP_SERVER_URL=http://localhost:8080
+REACT_APP_SERVER_WS_URL=ws://localhost:8080
+```
