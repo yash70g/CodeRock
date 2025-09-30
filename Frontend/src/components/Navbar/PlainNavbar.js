@@ -7,7 +7,7 @@ function PlainNavbar() {
     return (
         <Navbar bg="dark" variant="dark" expand="lg">
             <Container fluid className="px-1">
-                <Navbar.Brand href="/">CodeSphere</Navbar.Brand>
+                <Navbar.Brand href="/">CodeRock</Navbar.Brand>
             </Container>
         </Navbar>
     );

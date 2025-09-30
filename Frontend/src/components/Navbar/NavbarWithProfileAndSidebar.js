@@ -45,7 +45,7 @@ function NavbarWithProfileAndSidebar({ TabNames = [], TabLinks = [], ActiveTabIn
                         </Navbar.Brand>
                         <Offcanvas show={show} onHide={handleClose} className="bg-dark text-light">
                             <Offcanvas.Header closeButton className="border-bottom border-dark">
-                                <Offcanvas.Title className="text-light">CodeSphere</Offcanvas.Title>
+                                <Offcanvas.Title className="text-light">CodeRock</Offcanvas.Title>
                             </Offcanvas.Header>
                             <Offcanvas.Body>
                                 <ul className="nav nav-pills flex-column mb-auto">
