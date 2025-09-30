@@ -4,6 +4,7 @@ let connections = {};
 async function connectDB() {
     try {
         const databaseNames = ['Assignments', 'Colleges', 'Professors', 'QuestionBank', 'Students', 'Evaluations', "AssignmentSubmissions", "EvaluationSubmissions"];
+        // const databaseNames = ['Assignments', 'Colleges', 'Professors', 'QuestionBank', 'Students'];
 
         for (let i = 0; i < databaseNames.length; i++) {
             const DBconnectionString = `mongodb://localhost:27017/${databaseNames[i]}`;
@@ -24,7 +25,7 @@ async function writeDB(databaseName, collectionName, data, schema) {
         console.log(`Data written to ${collectionName} collection in ${databaseName} database`);
     } catch (error) {
         console.error(`Error writing to the database: ${databaseName} collection : ${collectionName}, error : `, error);
-        throw error; 
+        throw error; // Rethrow the error to handle it where writeDB is called
     }
 }
 
@@ -33,12 +34,15 @@ async function checkIfExists(databaseName, collectionName, query, schema) {
         const thisModel = connections[databaseName].model(collectionName, schema, collectionName);
         const exists = await thisModel.exists(query);
         return exists;
+        //returning the result of the exists function
+        //if the document exists, it will return true, else false
     } catch (error) {
         console.error(`Error checking if document exists: ${databaseName}.${collectionName}`, error);
-        throw error; 
+        throw error; // Re-throw the error for handling in the calling function
     }
 }
 
+//we dont need validation while Read because it can have projection and we can use it to get only the required fields
 
 async function readDB(databaseName, collectionName, query, schema, projection = {}) {
     try {

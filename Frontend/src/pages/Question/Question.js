@@ -65,22 +65,7 @@ function Question() {
                                 <Form>
                                     <Tab.Content>
                                         <Tab.Pane eventKey="Description" style={{ color: "white" }}>
-                                            <QuestionDetailsPreview
-                                                QuestionName={Question.QuestionName}
-                                                ProblemStatement={Question.ProblemStatement}
-                                                Constraints={Question.Constraints}
-                                                InputFormat={Question.InputFormat}
-                                                OutputFormat={Question.OutputFormat}
-                                                SampleTestCases={Question.TestCases
-                                                    .filter(TestCase => TestCase.sampleTestCase)
-                                                    .map(TestCase => ({
-                                                        input: TestCase.input,
-                                                        expectedOutput: TestCase.expectedOutput
-                                                    }))
-                                                }
-                                                TimeLimitPerTestCase={5}
-                                                MemoryLimitPerTestCase={30}
-                                            />
+                                            <QuestionDetailsPreview QuestionName={Question.QuestionName} ProblemStatement={Question.ProblemStatement} Constraints={Question.Constraints} InputFormat={Question.InputFormat} OutputFormat={Question.OutputFormat} SampleTestCases={Question.TestCases.filter(TestCase => TestCase.sampleTestCase)} TimeLimitPerTestCase={5} MemoryLimitPerTestCase={30} />
                                         </Tab.Pane>
                                         {(type === "Full") && <Tab.Pane eventKey="Evaluation">
                                             <HiddenQuestionDetailsPreview HiddenTestCases={Question.TestCases.filter(TestCase => !TestCase.sampleTestCase)} SolutionCode={Question.SolutionCode} RandomTestChecked={Question.RandomTestChecked} RandomTestCode={Question.RandomTestCode} />

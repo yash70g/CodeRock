@@ -63,14 +63,14 @@ const QuestionSchema = new mongoose.Schema({
     SolutionCode: { type: String, required: true },
     TestCases: [{
         input: { type: String, required: true },
-        output: { type: String, required: true }, 
-        sampleTestCase: { type: Boolean, required: true }, 
+        sampleTestCase: { type: Boolean, required: true },
     }],
     RandomTestChecked: { type: Boolean, required: true },
     CreatedBy: { type: mongoose.Schema.Types.ObjectId, required: true },
     CreatedOn: { type: Date, required: true },
 });
 
+// Conditional validation for RandomTestCode
 QuestionSchema.path('RandomTestCode').required(function () {
     return this.RandomTestChecked === true;
 }, 'RandomTestCode is required when RandomTestChecked is true');

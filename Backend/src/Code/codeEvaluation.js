@@ -108,7 +108,7 @@ if (studentCodeResponse.success === false) {
         success: true,
         message: studentCodeResponse.message,
         verdict: studentCodeResponse.verdict,
-        output: studentCodeResponse.output || "", 
+        output: studentCodeResponse.output || "",  // <-- Include output string
         type: `Verdict`,
         testcase: RunOn,
         Question: QuestionPlaceHolder,
@@ -116,8 +116,10 @@ if (studentCodeResponse.success === false) {
     }));
     return false;
 }
-    let Comparison = await CompareOutputs(ws, solutionCodeResponse, studentCodeResponse, RunOn);
-    if (Comparison === undefined) return; 
+
+    //if both run successfully, then compare the outputs
+    let Comparison = await CompareOutputs(ws, solutionCodeResponse, studentCodeResponse, RunOn); //this function automatically deletes the files after comparison
+    if (Comparison === undefined) return; //this means there was an error while comparing the outputs
 
     if (Comparison.different === true) {
         ws.send(JSON.stringify({
@@ -129,7 +131,7 @@ if (studentCodeResponse.success === false) {
             Question: QuestionPlaceHolder,
             score: 0
         }));
-        return false; 
+        return false; //continue to next testcase as this testcase failed
     }
     else {
         ws.send(JSON.stringify({
@@ -141,11 +143,13 @@ if (studentCodeResponse.success === false) {
             Question: QuestionPlaceHolder,
             score: 1
         }));
-        return true;
+        return true; //continue to next testcase as this testcase passed
     }
 }
 
-
+//This function evaluates the question by running and comparing the solution code and student code for each testcase
+//It return undefined if there is an error, else it returns true
+//Question is an object containing SolutionCode, TestCases, RandomTestChecked, RandomTestCode, QuestionName
 async function EvaluateQuestion(ws, Question, CodeToRun) {
 
     ws.send(JSON.stringify({
@@ -154,21 +158,25 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
         type: `logs`
     }));
 
+    //iterating over all testcases of this question
     let PassedAllTestCases = true;
     let TotalScore = 0;
     let ScoreObtained = 0;
 
+    //iterating over all testcases of this question
     for (let i = 0; i < Question.TestCases.length; i++) {
+
         let RunResponse = await RunAndCompare(ws, Question.SolutionCode, CodeToRun, Question.TestCases[i].input, `Testcase ${i + 1}`, Question.QuestionName);
         if (RunResponse === undefined) return;
-        if (RunResponse === false) {   
+        if (RunResponse === false) {    //if this testcase failed
             TotalScore += 1;
             PassedAllTestCases = false;
-        } else {                       
+        } else {                        //if this testcase passed
             TotalScore += 1;
             ScoreObtained += 1;
         }
     }
+    //if RandomTestChecked is true, then run the RandomTestCode and compare the output
     if (Question.RandomTestChecked) {
 
         let RandomTestCodeResponse = await RunCode(ws, Question.RandomTestCode, "", "Random TestCase Generator", "");
