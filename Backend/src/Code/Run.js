@@ -1,6 +1,6 @@
-const fs = require('fs');
+const axios = require('axios');
+const fs = require('fs'); // keep for DeleteAfterExecution compatibility
 const path = require('path');
-const { execFile, spawn } = require('child_process');
 
 function DeleteAfterExecution(...filePaths) {
     filePaths.forEach(filePath => {
@@ -18,182 +18,125 @@ function DeleteAfterExecution(...filePaths) {
     });
 }
 
-async function writeCppToFile(code, scriptPath) {
-    return new Promise((resolve, reject) => {
-        fs.writeFile(scriptPath, code, (err) => {
-            if (err) {
-                console.log(`Error occurred while writing the ${scriptPath} file, err : ${err}`);
-                reject(err);
-            } else {
-                console.log(`Successfully written the ${scriptPath} file`);
-                resolve();
-            }
-        });
-    });
+const RAW_JUDGE0_URL = process.env.JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com/submissions';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPIDAPI_KEY;
+const JUDGE0_HOST = 'judge0-ce.p.rapidapi.com';
+
+function ensureJudge0Url(url) {
+    // Ensure wait=true and base64_encoded=true in URL query
+    try {
+        const u = new URL(url);
+        u.searchParams.set('wait', 'true');
+        u.searchParams.set('base64_encoded', 'true');
+        return u.toString();
+    } catch (e) {
+        let out = url;
+        if (!/wait=/.test(out)) out += (out.includes('?') ? '&' : '?') + 'wait=true';
+        if (/base64_encoded=/.test(out)) {
+            out = out.replace(/base64_encoded=[^&]*/, 'base64_encoded=true');
+        } else {
+            out += '&base64_encoded=true';
+        }
+        return out;
+    }
 }
 
-function prepareCppSource(snippet) {
-    if (/\bmain\s*\(/.test(snippet)) {
-        return snippet;
-    }
-    // You can enable the wrapper logic here if you need
-    return snippet;
+function b64EncodeSafe(s = '') {
+    return Buffer.from(String(s), 'utf8').toString('base64');
 }
+
+function b64DecodeSafe(s = '') {
+    try {
+        return Buffer.from(String(s), 'base64').toString('utf8');
+    } catch (e) {
+        return String(s || '');
+    }
+}
+
+const JUDGE0_URL = ensureJudge0Url(RAW_JUDGE0_URL);
 
 async function RunCpp(code, input = "", TimeLimit = 5) {
-    return new Promise(async (resolve, reject) => {
-        const scriptName = Date.now().toString();
-        const scriptPath = path.join(__dirname, `${scriptName}.cpp`);
-        const exeName = process.platform === 'win32' ? `${scriptName}.exe` : `${scriptName}.out`;
-        const executablePath = path.join(__dirname, exeName);
-        const outputFilePath = path.join(__dirname, `${scriptName}.txt`);
+    try {
+        // Judge0 expects base64-encoded fields when base64_encoded=true
+        const payload = {
+            source_code: b64EncodeSafe(code || ""),
+            stdin: b64EncodeSafe(input || ""),
+            language_id: 52, // C++ (GCC). adjust if needed
+            cpu_time_limit: TimeLimit
+        };
 
-        const maxFileSize = parseInt(process.env.MemoryLimitForOutputFileInBytes || '', 10) || (5 * 1024 * 1024);
+        const headers = {
+            'Content-Type': 'application/json'
+        };
 
-        const sourceToWrite = prepareCppSource(code);
-
-        try {
-            await writeCppToFile(sourceToWrite, scriptPath);
-        } catch (err) {
-            resolve({
-                success: false,
-                message: `Error occurred while writing the ${scriptPath} file`,
-                verdict: "Compilation Error"
-            });
-            return;
+        if (RAPIDAPI_KEY) {
+            headers['X-RapidAPI-Key'] = RAPIDAPI_KEY;
+            headers['X-RapidAPI-Host'] = JUDGE0_HOST;
         }
 
-        execFile('g++', [scriptPath, '-o', executablePath], { timeout: 20000 }, (compileErr, stdoutCompile, stderrCompile) => {
-            if (compileErr) {
-                console.log(`Compilation failed: ${stderrCompile || compileErr.message}`);
-                DeleteAfterExecution(scriptPath, executablePath);
-                resolve({
-                    success: false,
-                    message: `Error occurred while Compiling the code: ${stderrCompile || compileErr.message}`,
-                    verdict: "Compilation Error"
-                });
-                return;
-            }
+        const axiosConfig = {
+            headers,
+            timeout: (TimeLimit + 10) * 1000 // buffer
+        };
 
-            const writeStream = fs.createWriteStream(outputFilePath, { flags: 'w' });
-            let bytesWritten = 0;
-            let killedDueTo = null;
-            let stderrBuffer = "";
+        const resp = await axios.post(JUDGE0_URL, payload, axiosConfig);
+        const result = resp.data || {};
 
-            const child = spawn(executablePath, [], { windowsHide: true });
+        // When base64_encoded=true Judge0 returns base64 strings for stdout/stderr/compile_output
+        const statusId = result && result.status && result.status.id;
+        const rawStdout = result.stdout || "";
+        const rawStderr = result.stderr || "";
+        const rawCompile = result.compile_output || "";
 
-            const killTimer = setTimeout(() => {
-                killedDueTo = "tle";
-                try { child.kill('SIGKILL'); } catch (e) { }
-            }, TimeLimit * 1000);
+        const stdout = rawStdout ? b64DecodeSafe(rawStdout) : "";
+        const stderr = rawStderr ? b64DecodeSafe(rawStderr) : "";
+        const compile_output = rawCompile ? b64DecodeSafe(rawCompile) : "";
 
-            child.stdout.on('data', chunk => {
-                const chunkBuf = Buffer.from(chunk);
-                const remaining = maxFileSize - bytesWritten;
-                if (remaining <= 0) {
-                    killedDueTo = "mle";
-                    try { child.kill('SIGKILL'); } catch (e) { }
-                    return;
-                }
-                if (chunkBuf.length > remaining) {
-                    writeStream.write(chunkBuf.slice(0, remaining), () => {
-                        bytesWritten += remaining;
-                        killedDueTo = "mle";
-                        try { child.kill('SIGKILL'); } catch (e) { }
-                    });
-                } else {
-                    writeStream.write(chunkBuf, () => {
-                        bytesWritten += chunkBuf.length;
-                    });
-                }
-            });
-            child.stderr.on('data', data => {
-                stderrBuffer += data.toString();
-            });
-            if (input) {
-                try {
-                    child.stdin.write(input);
-                } catch (e) { }
-            }
-            try { child.stdin.end(); } catch (e) { }
+        if (statusId === 3) { // Accepted / successful run
+            return {
+                success: true,
+                output: String(stdout),
+                verdict: "Run Successful"
+            };
+        }
 
-            child.on('error', (err) => {
-                clearTimeout(killTimer);
-                writeStream.end();
-                console.log("Execution spawn error:", err);
-                DeleteAfterExecution(scriptPath, executablePath);
-                fs.unlink(outputFilePath, () => {
-                    resolve({
-                        success: false,
-                        message: `Error occured while running the script ${executablePath}: ${err.message}`,
-                        verdict: "Runtime Error"
-                    });
-                });
-            });
+        if (statusId === 5) { // Time Limit Exceeded
+            return {
+                success: false,
+                message: "Time Limit Exceeded",
+                verdict: "Time Limit Exceeded"
+            };
+        }
 
-            child.on('close', (code, signal) => {
-                clearTimeout(killTimer);
-                writeStream.end(async () => {
-                    if (killedDueTo === "tle") {
-                        fs.unlink(outputFilePath, () => {
-                            DeleteAfterExecution(scriptPath, executablePath);
-                            resolve({
-                                success: false,
-                                message: `script took too long to execute.`,
-                                verdict: "Time Limit Exceeded"
-                            });
-                            DeleteAfterExecution(scriptPath, executablePath);
-                        });
-                        return;
-                    }
-                    if (killedDueTo === "mle") {
-                        fs.unlink(outputFilePath, () => {
-                            DeleteAfterExecution(scriptPath, executablePath);
-                            resolve({
-                                success: false,
-                                message: `Output File size exceeds ${(maxFileSize / (1024 * 1024)).toFixed(2)} MB`,
-                                verdict: "Memory Limit Exceeded"
-                            });
-                        });
-                        return;
-                    }
-                    if (code !== 0) {
-                        fs.unlink(outputFilePath, () => {
-                            DeleteAfterExecution(scriptPath, executablePath);
-                            resolve({
-                                success: false,
-                                message: `Runtime Error: ${stderrBuffer || `exit code ${code}`}`,
-                                verdict: "Runtime Error"
-                            });
-                        });
-                        return;
-                    }
+        if (statusId === 6) { // Compilation Error
+            return {
+                success: false,
+                message: String(compile_output || "Compilation Error"),
+                verdict: "Compilation Error"
+            };
+        }
 
-                    fs.readFile(outputFilePath, 'utf8', (err, Outdata) => {
-                        DeleteAfterExecution(scriptPath, executablePath);
-                        if (err) {
-                            console.log(`Student Code Output: <empty> (failed to read output)`);
-                            resolve({
-                                success: true,
-                                outputFilePath,
-                                output: "",
-                                verdict: "Run Successful (but failed to read output)"
-                            });
-                        } else {
-                            console.log(`Student Code Output: ${Outdata}`);
-                            resolve({
-                                success: true,
-                                outputFilePath,
-                                output: Outdata,
-                                verdict: "Run Successful"
-                            });
-                        }
-                    });
-                });
-            });
+        if (statusId === 4) { // Runtime Error
+            return {
+                success: false,
+                message: String(stderr || "Runtime Error"),
+                verdict: "Runtime Error"
+            };
+        }
 
-        });
-    });
+        return {
+            success: false,
+            message: result.status ? result.status.description : "Unknown Error",
+            verdict: result.status ? result.status.description : "Unknown Error"
+        };
+    } catch (err) {
+        const msg = err.response && err.response.data ? JSON.stringify(err.response.data) : err.message;
+        return {
+            success: false,
+            message: `Judge0 Error: ${msg}`,
+            verdict: "Internal Error"
+        };
+    }
 }
 
 module.exports = { RunCpp, DeleteAfterExecution };
