@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import LogsAccordion from '../Accordion/LogsAccordion';
 import { Spinner } from 'react-bootstrap';
 import GroupedResults from '../List/EvaluateAssignmentDisplay';
+import { useNavigate } from 'react-router-dom';
 
 //_id is the assignment id and UserCodes is an array of objects with the following structure
 // {
@@ -11,93 +12,122 @@ import GroupedResults from '../List/EvaluateAssignmentDisplay';
 //     UserCode: String,
 //     QuestionId: String
 // }
+
 function SubmitAssignmentModal({ _id, UserCodes }) {
-    const [showModal, setShowModal] = useState(false);              //This state stores whether the modal is open or not
-    const [logsMessage, setLogsMessage] = useState([]);             //this state stores the logs of the dry run
-    const [CurMessage, setCurMessage] = useState("");               //this state stores the current message of the Evaluation of the assignment
-    const [isOpen, setIsOpen] = useState(true);                     // State to manage logs accordion open/close
-    const [isLoading, setIsLoading] = useState(true);              //this state stores whether to display spinner or not
-    const [verdictAndDecision, setverdictAndDecision] = useState([]);    //this state stores the verdict and decision of the questions of the assignment
-    // console.log(verdict);
-    const handleShowModal = () => {                                 //this function is called when the modal is opened
-        handleEvaluateAssignment();
+    const [showModal, setShowModal] = useState(false);
+    const [logsMessage, setLogsMessage] = useState([]);
+    const [CurMessage, setCurMessage] = useState("");
+    const [isOpen, setIsOpen] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [verdictAndDecision, setverdictAndDecision] = useState([]);
+    const socketRef = useRef(null);
+    const navigate = useNavigate();
+
+    const handleShowModal = () => {
         setShowModal(true);
         setIsOpen(true);
         setIsLoading(true);
+        setLogsMessage([]);
+        setCurMessage("");
+        setverdictAndDecision([]);
+        handleEvaluateAssignment();
     }
-    //this function is called when the modal is closed
+
     const handleCloseModal = () => {
         if (socketRef.current) {
-            console.log('Closing the socket');
-            socketRef.current.close();
+            try { socketRef.current.close(); } catch (e) { /* ignore */ }
+            socketRef.current = null;
         }
         setShowModal(false);
         setLogsMessage([]);
         setCurMessage("");
         setverdictAndDecision([]);
+        setIsLoading(true);
     }
-    const socketRef = useRef(null);                                 //this ref is used to store the socket connection, so that it can be closed when the modal is closed
+
+    useEffect(() => {
+        if (!isLoading) {
+            const expected = Array.isArray(UserCodes) ? UserCodes.length : 0;
+            if (expected === 0) return;
+            const decisionsCount = verdictAndDecision.filter(r => r.type === 'Decision' || r.type === 'Verdict').length;
+            if (decisionsCount >= expected) {
+                navigate('/students/assignments');
+                handleCloseModal();
+            }
+        }
+    }, [isLoading, verdictAndDecision]);
 
     const handleEvaluateAssignment = async () => {
-
         try {
-            console.log(_id)
-            const socket = new WebSocket(`${process.env.REACT_APP_SERVER_WS_URL}/students/assignments/evaluateAssignment/${_id}`); //Create a new WebSocket connection
+            const socket = new WebSocket(`${process.env.REACT_APP_SERVER_WS_URL}/students/assignments/evaluateAssignment/${_id}`);
             socketRef.current = socket;
 
-            socket.onopen = () => {
-                console.log('WebSocket connection opened');
+            socket.onopen = () => { /*  "start" */ };
+
+            socket.onmessage = (event) => {
+                if (event.data === "start") {
+                    try {
+                        socket.send(JSON.stringify({ UserCodes }));
+                    } catch (error) {
+                        toast.error(error.message);
+                        try { socket.close(); } catch (_) {}
+                    }
+                    return;
+                }
+
+                try {
+                    const response = JSON.parse(event.data);
+
+                    if (response.success === false) {
+                        try { socket.close(); } catch (_) {}
+                        return;
+                    }
+
+                    if (response.type === "output") {
+                        setLogsMessage((prev) => [...prev, response]);
+                        setCurMessage(response); 
+                    }
+
+                    if (response.type === "Verdict" || response.type === "Decision") {
+                        setverdictAndDecision((prev) => [...prev, response]);
+                    }
+
+                } catch (error) {
+                    toast.error(error.message);
+                    try { socket.close(); } catch (_) {}
+                }
             };
 
-            // Event listener for incoming messages
-            socket.onmessage = (event) => {
-                if (event.data === "start") {  //if the server sends "start" message, send the data to the server
-                    try {
-                        socket.send(JSON.stringify({
-                            UserCodes: UserCodes
-                        }));
-                    }
-                    catch (error) {
-                        toast.error(error.message);
-                        socket.close();
-                    }
-                } else {
-                    try {
-                        const response = JSON.parse(event.data);
-                        console.log(response);
-                        if (response.success === false) {
-                            socket.close();
-                        }
-                        if(response.type === "Final"){
-                            //redirect to /students/assignments
-                            window.location.href = "/students/assignments";
-                        }
-                        if (response.type === "logs") {
-                            setLogsMessage((prev) => [...prev, response]); //Append the logs to the logsMessage state, to be displayed
-                            setCurMessage(response); //Set the current message to the message received from the server
-                        }
-                        if (response.type === "Verdict" || response.type === "Decision") {
-                            setverdictAndDecision((prev) => [...prev, response]); //Append the verdict to the verdict state, to be displayed
-                        }
-                    }
-                    catch (error) {
-                        toast.error(error.message);
-                        socket.close();
-                    }
-                }
-            }
-
             socket.onclose = () => {
-                console.log('WebSocket connection closed');
                 setIsLoading(false);
                 setIsOpen(false);
             };
 
+            socket.onerror = (e) => {
+                toast.error('WebSocket error during evaluation');
+                setIsLoading(false);
+                try { socket.close(); } catch (_) {}
+            };
         } catch (error) {
             toast.error(error.message);
+            setIsLoading(false);
         }
     }
 
+    const handleUnsubmit = () => {
+        try {
+            if (socketRef.current && socketRef.current.readyState === 1) {
+                socketRef.current.send(JSON.stringify({ type: 'cancel' }));
+                socketRef.current.close();
+            }
+        } catch (e) { console.warn('unsubmit error', e); }
+
+        setShowModal(false);
+        setLogsMessage([]);
+        setCurMessage("");
+        setverdictAndDecision([]);
+        setIsLoading(true);
+    }
 
     return (
         <>
@@ -107,23 +137,20 @@ function SubmitAssignmentModal({ _id, UserCodes }) {
 
             <Modal show={showModal} onHide={handleCloseModal}>
                 <Modal.Header closeButton>
-                    <Modal.Title>
-                        Submit Assignment
-                    </Modal.Title>
+                    <Modal.Title>Submit Assignment</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>{CurMessage.message}
-                    </p>
-                    {isLoading &&
-                        <Spinner animation="border" role="status" />
-                    }
+                    <p>{CurMessage && CurMessage.message ? CurMessage.message : ''}</p>
+
+                    {isLoading && <Spinner animation="border" role="status" />}
+
+                    {/* Show grouped results (verdicts/decisions) */}
+                    
                     <GroupedResults results={verdictAndDecision} />
-                    <LogsAccordion results={logsMessage} isOpen={isOpen} setIsOpen={setIsOpen} />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseModal}>
-                        Close
-                    </Button>
+                    <Button variant="secondary" onClick={handleCloseModal}>Close</Button>
+                    <Button variant="danger" onClick={handleUnsubmit}>Unsubmit</Button>
                 </Modal.Footer>
             </Modal>
         </>
