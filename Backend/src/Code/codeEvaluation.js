@@ -1,55 +1,60 @@
 const { RunCpp } = require("./Run");
+const { compareTextFilesLineByLine } = require("./StreamComparison");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
-// Send minimal execution result to ws: only success, output or error, type and testcase
 async function RunCode(ws, Code, TestCase, Type, RunOn) {
     try {
         let CodeResponse = await RunCpp(Code, TestCase, 5);
 
-        // Only send minimal output/error to websocket for student runs
-        if (Type === "Student" && ws && typeof ws.send === 'function') {
-            ws.send(JSON.stringify({
-                success: !!CodeResponse.success,
-                output: CodeResponse.success ? (CodeResponse.output || "") : "",
-                error: CodeResponse.success ? "" : (CodeResponse.message || CodeResponse.verdict || "Execution Error"),
-                testcase: RunOn,
-                type: "output"
-            }));
+        if (Type === "Student" && ws && typeof ws.send === "function") {
+            ws.send(
+                JSON.stringify({
+                    success: !!CodeResponse.success,
+                    output: CodeResponse.success ? CodeResponse.output || "" : "",
+                    error: CodeResponse.success ? "" : CodeResponse.message || CodeResponse.verdict || "Execution Error",
+                    testcase: RunOn,
+                    type: "output",
+                })
+            );
         }
 
         return CodeResponse;
     } catch (err) {
-        if (ws && typeof ws.send === 'function') {
-            ws.send(JSON.stringify({
-                success: false,
-                output: "",
-                error: `Internal Server Error while running ${Type} Code [${RunOn}] : ${err.message}`,
-                testcase: RunOn,
-                type: "output"
-            }));
-            try { ws.close(1011); } catch (_) {}
+        if (ws && typeof ws.send === "function") {
+            ws.send(
+                JSON.stringify({
+                    success: false,
+                    output: "",
+                    error: `Internal Server Error while running ${Type} Code [${RunOn}] : ${err.message}`,
+                    testcase: RunOn,
+                    type: "output",
+                })
+            );
+            try {
+                ws.close(1011);
+            } catch (_) {}
         }
         return { success: false, message: err.message, verdict: "Internal Error" };
     }
 }
 
-// Compare outputs as strings (no files)
 async function CompareOutputs(ws, solutionCodeResponse, studentCodeResponse, RunOn) {
     try {
         if (solutionCodeResponse.output === undefined || studentCodeResponse.output === undefined) {
             return { success: false, error: `Missing output for comparison in ${RunOn}` };
         }
 
-        const normalize = str => (str || "").replace(/\r\n/g, "\n").trim();
+        const normalize = (str) => (str || "").replace(/\r\n/g, "\n").trim();
         const solOut = normalize(solutionCodeResponse.output);
         const stuOut = normalize(studentCodeResponse.output);
 
-        return { success: true, different: (solOut !== stuOut) };
+        return { success: true, different: solOut !== stuOut };
     } catch (e) {
         return { success: false, error: `Internal Server Error while comparing outputs of ${RunOn}: ${e.message}` };
     }
 }
-
-// RunAndCompare returns boolean (true if passed), does not emit websocket verdicts itself
 async function RunAndCompare(ws, SolutionCode, StudentCode, TestCase, RunOn, QuestionPlaceHolder = "") {
     let solutionCodeResponse = await RunCode(ws, SolutionCode, TestCase, "Solution", RunOn);
     if (solutionCodeResponse === undefined) return undefined;
@@ -57,37 +62,54 @@ async function RunAndCompare(ws, SolutionCode, StudentCode, TestCase, RunOn, Que
     if (studentCodeResponse === undefined) return undefined;
 
     if (solutionCodeResponse.success === false) {
-        // cannot compare if solution failed
-        return { ok: false, reason: 'solution_failed', message: solutionCodeResponse.message || solutionCodeResponse.verdict };
+        return { ok: false, reason: "solution_failed", message: solutionCodeResponse.message || solutionCodeResponse.verdict };
     }
 
     if (studentCodeResponse.success === false) {
-        // student had runtime/compile/tle; treat as failed
-        return { ok: false, reason: 'student_error', message: studentCodeResponse.message || studentCodeResponse.verdict };
+        return { ok: false, reason: "student_error", message: studentCodeResponse.message || studentCodeResponse.verdict };
     }
 
-    let Comparison = await CompareOutputs(ws, solutionCodeResponse, studentCodeResponse, RunOn);
-    if (Comparison === undefined || Comparison.success === false) {
-        return { ok: false, reason: 'compare_error', message: Comparison && Comparison.error ? Comparison.error : 'compare failed' };
-    }
+    try {
+        const sanitize = (s = "") => String(s).replace(/[^a-z0-9_\-]/gi, "_").slice(0, 40) || "q";
+        const baseName = sanitize(QuestionPlaceHolder) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
-    if (Comparison.different === true) {
-        return { ok: false, reason: 'wrong_answer' };
-    } else {
-        return { ok: true };
+        const tempDir = path.join(__dirname, "temp");
+        try {
+            fs.mkdirSync(tempDir, { recursive: true });
+        } catch (e) {
+            console.warn(`Could not create temp dir ${tempDir}, falling back to os.tmpdir(): ${e.message}`);
+        }
+
+        const solFile = path.join(tempDir, `sol_${baseName}.txt`);
+        const stuFile = path.join(tempDir, `stu_${baseName}.txt`);
+
+        await fs.promises.writeFile(solFile, solutionCodeResponse.output || "", "utf8");
+        await fs.promises.writeFile(stuFile, studentCodeResponse.output || "", "utf8");
+        const cmp = await compareTextFilesLineByLine(solFile, stuFile);
+
+        if (!cmp || cmp.success === false) {
+            return { ok: false, reason: "compare_error", message: cmp && cmp.error ? cmp.error : "Comparison failed" };
+        }
+
+        if (cmp.different === true) {
+            return { ok: false, reason: "wrong_answer" };
+        } else {
+            return { ok: true };
+        }
+    } catch (e) {
+        return { ok: false, reason: "compare_exception", message: e.message || String(e) };
     }
 }
 
-// Evaluate question using Judge0 for all testcases
-// Emits only a final Decision message (TotalScore, ScoreObtained) after evaluating all testcases
 async function EvaluateQuestion(ws, Question, CodeToRun) {
-    // optional prelim message (can be removed if not desired)
-    if (ws && typeof ws.send === 'function') {
-        ws.send(JSON.stringify({
-            success: true,
-            message: `Evaluation started for ${Question.QuestionName}`,
-            type: `output`
-        }));
+    if (ws && typeof ws.send === "function") {
+        ws.send(
+            JSON.stringify({
+                success: true,
+                message: `Evaluation started for ${Question.QuestionName}`,
+                type: `output`,
+            })
+        );
     }
 
     let PassedAllTestCases = true;
@@ -98,13 +120,8 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
         const runOn = `Testcase ${i + 1}`;
         let res = await RunAndCompare(ws, Question.SolutionCode, CodeToRun, Question.TestCases[i].input, runOn, Question.QuestionName);
         if (res === undefined) {
-            // internal error - abort evaluation
-            if (ws && typeof ws.send === 'function') {
-                ws.send(JSON.stringify({
-                    success: false,
-                    message: `Internal error while evaluating ${runOn}`,
-                    type: `output`
-                }));
+            if (ws && typeof ws.send === "function") {
+                ws.send(JSON.stringify({ success: false, message: `Internal error while evaluating ${runOn}`, type: `output` }));
             }
             return;
         }
@@ -114,26 +131,27 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
             ScoreObtained += 1;
         } else {
             PassedAllTestCases = false;
-            // continue evaluating remaining tests but do not emit detailed verdicts here
+            // continue evaluating remaining tests
         }
     }
 
-    // Final decision message with totals
-    if (ws && typeof ws.send === 'function') {
-        ws.send(JSON.stringify({
-            success: true,
-            message: PassedAllTestCases ? 'All Testcases Passed' : 'Some Testcases Failed',
-            verdict: PassedAllTestCases ? 'Accepted' : 'Wrong Answer',
-            type: 'Decision',
-            TotalScore,
-            ScoreObtained,
-            Question: Question.QuestionName
-        }));
+    if (ws && typeof ws.send === "function") {
+        ws.send(
+            JSON.stringify({
+                success: true,
+                message: PassedAllTestCases ? "All Testcases Passed" : "Some Testcases Failed",
+                verdict: PassedAllTestCases ? "Accepted" : "Wrong Answer",
+                type: "Decision",
+                TotalScore,
+                ScoreObtained,
+                Question: Question.QuestionName,
+            })
+        );
     }
 
     return {
         TotalScore,
-        ScoreObtained
+        ScoreObtained,
     };
 }
 
