@@ -3,13 +3,248 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="CodeSphere is a platform for students and professors to simplify the process of coding assignments."
-    />
-    <title>CodeSphere</title>
+    <title>CodeSphere — Custom Background</title>
+    <style>
+      /* --- Reset + root --- */
+      html,body { height:100%; margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+      :root{
+        --bg-0: #020617;
+        --accent: #16a34a; /* neon green */
+        --muted: rgba(255,255,255,0.06);
+      }
+
+      /* --- Fullscreen background container (stack layers) --- */
+      #bg {
+        position:fixed; inset:0; z-index:-9999; overflow:hidden; pointer-events:none;
+        background: radial-gradient(circle at 10% 10%, rgba(10,30,70,0.9), transparent 10%),
+                    radial-gradient(circle at 90% 70%, rgba(3,20,40,0.85), transparent 15%),
+                    var(--bg-0);
+      }
+
+      /* --- Animated gradient blobs (soft, GPU friendly) --- */
+      .blob {
+        position:absolute; filter: blur(40px) saturate(120%);
+        width: 40vmax; height: 40vmax; border-radius:50%;
+        transform: translate3d(0,0,0);
+        mix-blend-mode: screen; opacity:0.9;
+        animation: float 18s ease-in-out infinite;
+      }
+      .blob--1{ background: linear-gradient(135deg, rgba(18,65,136,0.9), rgba(12,45,120,0.9)); left:-10vmax; top:-20vmax; animation-duration:22s; }
+      .blob--2{ background: linear-gradient(135deg, rgba(4,120,87,0.85), rgba(6,96,75,0.85)); right:-15vmax; top:-10vmax; animation-duration:26s; animation-delay: -2s; }
+      .blob--3{ background: linear-gradient(135deg, rgba(90,25,150,0.7), rgba(48,12,95,0.7)); left:20vmax; bottom:-15vmax; animation-duration:20s; animation-delay:-4s; }
+      @keyframes float {
+        0% { transform: translate3d(0,0,0) scale(1);}
+        25% { transform: translate3d(6vmax, -4vmax, 0) scale(1.05);}
+        50% { transform: translate3d(0,6vmax,0) scale(0.98);}
+        75% { transform: translate3d(-6vmax,-2vmax,0) scale(1.02);}
+        100% { transform: translate3d(0,0,0) scale(1);}
+      }
+
+      /* --- Canvas particles (neon links) --- */
+      #particles {
+        position:absolute; inset:0; width:100%; height:100%;
+        display:block; z-index: -9988;
+      }
+
+      /* --- Floating code lines layer --- */
+      .code-lines {
+        position:absolute; inset:0; z-index:-9987; pointer-events:none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+        color: rgba(30,255,120,0.04);
+        font-size: 12px; letter-spacing: 0.4px;
+      }
+      .code-line {
+        position:absolute;
+        white-space:nowrap;
+        transform: translateX(-10%);
+        animation: slide-left linear infinite;
+        opacity:0.7;
+      }
+      @keyframes slide-left {
+        0%   { transform: translateX(110%); opacity:0; }
+        10%  { opacity:0.35; }
+        90%  { opacity:0.35; }
+        100% { transform: translateX(-10%); opacity:0; }
+      }
+
+      /* --- Optional content root (for visibility tests) --- */
+      #root {
+        position:relative; z-index:10; min-height:100vh;
+        color:#e6eef8; /* page text color */
+      }
+      /* add a subtle overlay to improve contrast (optional) */
+      #bg::after {
+        content:""; position:absolute; inset:0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.45));
+        pointer-events:none;
+      }
+
+      /* responsive tweaks */
+      @media (prefers-reduced-motion: reduce) {
+        .blob, .code-line { animation: none !important; }
+      }
+    </style>
   </head>
-  <body style="background-color: rgb(19,31,56);">
-    <div id="root"></div>
+  <body>
+    <!-- Background container with layered effects -->
+    <div id="bg" aria-hidden="true">
+      <div class="blob blob--1"></div>
+      <div class="blob blob--2"></div>
+      <div class="blob blob--3"></div>
+
+      <!-- canvas for particles -->
+      <canvas id="particles"></canvas>
+
+      <!-- floating code lines -->
+      <div class="code-lines" id="codeLines" aria-hidden="true"></div>
+    </div>
+
+    <!-- Your app root -->
+    <div id="root">
+      <!-- Example content to preview on top of the background -->
+      <div style="padding:48px; max-width:1100px; margin:0 auto;">
+        <h1 style="font-size:36px; margin:0 0 12px;">Welcome to CodeRock</h1>
+        <p style="color:rgba(230,238,255,0.8); margin-bottom:18px; font-size:16px;">
+          A modern background demo — gradient blobs + neon particles + floating code lines.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      /* ----------------------------
+         Part 1: Canvas particle network
+         Lightweight, optimized for many screens.
+         ----------------------------*/
+      (function () {
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d', { alpha: true });
+        let w = canvas.width = innerWidth;
+        let h = canvas.height = innerHeight;
+        const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = w * DPR;
+        canvas.height = h * DPR;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.scale(DPR, DPR);
+
+        let particles = [];
+        const PARTICLE_COUNT = Math.max(24, Math.min(90, Math.floor((w*h)/90000))); // adaptive
+
+        function rand(min, max){ return Math.random()*(max-min)+min; }
+
+        function initParticles(){
+          particles = [];
+          for(let i=0;i<PARTICLE_COUNT;i++){
+            particles.push({
+              x: rand(0, w),
+              y: rand(0, h),
+              vx: rand(-0.25, 0.25),
+              vy: rand(-0.25, 0.25),
+              r: rand(0.8, 2.2),
+              hue: rand(130,170) // greenish
+            });
+          }
+        }
+
+        function draw(){
+          ctx.clearRect(0,0,w,h);
+          // draw connections
+          for(let i=0;i<particles.length;i++){
+            const p = particles[i];
+            for(let j=i+1;j<particles.length;j++){
+              const q = particles[j];
+              const dx = p.x - q.x;
+              const dy = p.y - q.y;
+              const d2 = dx*dx + dy*dy;
+              if(d2 < 16000){ // connection threshold (adjust)
+                const alpha = 0.3 * (1 - d2/16000);
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(q.x, q.y);
+                ctx.strokeStyle = 'rgba(34,197,94,' + alpha.toFixed(3) + ')';
+                ctx.lineWidth = 0.9;
+                ctx.stroke();
+              }
+            }
+          }
+          // draw particles
+          for(let p of particles){
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(34,197,94,0.95)';
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+
+        function step(){
+          for(let p of particles){
+            p.x += p.vx;
+            p.y += p.vy;
+            // wrap
+            if(p.x < -50) p.x = w + 50;
+            if(p.x > w + 50) p.x = -50;
+            if(p.y < -50) p.y = h + 50;
+            if(p.y > h + 50) p.y = -50;
+          }
+          draw();
+          requestAnimationFrame(step);
+        }
+
+        function resize(){
+          w = canvas.width = innerWidth;
+          h = canvas.height = innerHeight;
+          canvas.width = w * DPR;
+          canvas.height = h * DPR;
+          canvas.style.width = w + 'px';
+          canvas.style.height = h + 'px';
+          ctx.setTransform(DPR,0,0,DPR,0,0);
+          initParticles();
+        }
+
+        window.addEventListener('resize', resize, { passive:true });
+        initParticles();
+        step();
+
+        let mouse = {x:-9999,y:-9999};
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        setInterval(()=>{
+          for(let p of particles){
+            const dx = p.x - mouse.x, dy = p.y - mouse.y;
+            const d2 = dx*dx + dy*dy;
+            if(d2 < 9000){ // if close
+              p.vx += dx*0.00008;
+              p.vy += dy*0.00008;
+            }
+          }
+        }, 30);
+      })();
+
+      (function(){
+        const container = document.getElementById('codeLines');
+        const snippets = [
+          'for (let i = 0; i < n; ++i) { sum += arr[i]; }',
+          'if (isPrime(x)) console.log("prime");',
+          'git commit -m "improve scoring"',
+          'public static void main(String[] args) { }',
+          'SELECT * FROM users WHERE score > 900;',
+          'def solve():\\n  print("hello")',
+          'while (true) { /* compile-time */ }'
+        ];
+        // create 10 lines with spreaded vertical positions and durations
+        const count = 10;
+        for(let i=0;i<count;i++){
+          const el = document.createElement('div');
+          el.className = 'code-line';
+          el.style.top = (5 + i*(90/count)) + '%';
+          el.style.animationDuration = (18 + i*2) + 's';
+          el.style.animationDelay = -(i*1.6) + 's';
+          el.style.color = 'rgba(34,197,94,' + (0.04 + Math.random()*0.06) + ')';
+          el.style.fontSize = (10 + Math.floor(Math.random()*6)) + 'px';
+          el.textContent = snippets[i % snippets.length];
+          container.appendChild(el);
+        }
+      })();
+    </script>
   </body>
 </html>

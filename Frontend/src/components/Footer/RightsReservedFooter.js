@@ -1,11 +1,18 @@
-function RightsReservedFooter() {
-    return (
-        <footer className="footer mt-auto py-3 bg-dark text-white fixed-bottom">
-            <div className="container text-center">
-                <span>© 2025 CodeRock. All rights reserved.</span>
-            </div>
-        </footer>
-    );
-}
+import React from "react";
 
-export default RightsReservedFooter;
+export default function RightsReservedFooter() {
+  return (
+    <footer
+      className="w-100 py-3 mt-5 border-top"
+      style={{
+        background: "linear-gradient(to bottom, #0f172a, #0f172acc)",
+        color: "#cbd5e1",
+        borderColor: "#1e293b",
+      }}
+    >
+      <div className="text-center" style={{ fontSize: "14px", letterSpacing: "0.5px" }}>
+        © 2025 <span style={{ fontWeight: 600, color: "white" }}>CodeRock</span>. All rights reserved.
+      </div>
+    </footer>
+  );
+}
