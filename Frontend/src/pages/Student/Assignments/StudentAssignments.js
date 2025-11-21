@@ -1,9 +1,11 @@
 import NavbarWithProfileAndSidebar from "../../../components/Navbar/NavbarWithProfileAndSidebar";
+import PlainNavbar from "../../../components/Navbar/PlainNavbar";
 import StudentAssignmentNavtabs from "./StudentAssignmentNavtabs";
 
 
 function StudentAssignments() {
   return (
+    <>
     <div>
       <NavbarWithProfileAndSidebar TabNames={["Assignments"]} TabLinks={["/students/assignments"]} ActiveTabIndex={0} />
       <div className="container">
@@ -15,6 +17,7 @@ function StudentAssignments() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

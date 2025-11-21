@@ -5,7 +5,6 @@ import AssignmentListSkeleton from "../../../components/Skeletons/AssignmentList
 import { fetchData, putAPI, fetchAPI } from '../../../Scripts/Axios';
 import { Dropdown } from "react-bootstrap";
 import UnsubmitAssignmentConfirmationModal from "../../../components/Modal/UnsubmitAssignmentConfirmationModal";
-import './AssignmentList.css';
 
 function AssignmentList({ listType }) {
 
@@ -45,9 +44,8 @@ function AssignmentList({ listType }) {
     // Fetch question name by ID
     const fetchQuestionName = async (questionId) => {
         try {
-            // Use Public endpoint for students, Full for professors
-            const type = listType === "Pending" || listType === "Submitted" ? "Public" : "Full";
-            const response = await fetchAPI(`/Get${type}Question/${questionId}`);
+            // Always use Public endpoint for students (all list types)
+            const response = await fetchAPI(`/GetPublicQuestion/${questionId}`);
             
             if (response.data.success && response.data.Question) {
                 return response.data.Question.QuestionName;
@@ -78,23 +76,19 @@ function AssignmentList({ listType }) {
     // Fetch assignments
     useEffect(() => {
         const loadAssignments = async () => {
-            try {
-                const response = await fetchAPI(`/students/assignments/${listType.toLowerCase()}`);
-                
-                if (response.data.success) {
-                    setAssignments(response.data.Assignments || []);
+            // First fetch assignments using the original fetchData which handles auth
+            await fetchData(
+                `/students/assignments/${listType.toLowerCase()}`,
+                async (data) => {
+                    setAssignments(data);
                     // Fetch question names after assignments are loaded
-                    if (response.data.Assignments && response.data.Assignments.length > 0) {
-                        await fetchAllQuestionNames(response.data.Assignments);
+                    if (data && data.length > 0) {
+                        await fetchAllQuestionNames(data);
                     }
-                } else {
-                    toast.error(response.data.message || `Error fetching ${listType} Assignments`);
-                    setAssignments([]);
-                }
-            } catch (error) {
-                toast.error(`Error fetching ${listType} Assignments`);
-                setAssignments([]);
-            }
+                },
+                "Assignments",
+                `Error fetching ${listType} Assignments`
+            );
         };
 
         loadAssignments();
@@ -103,7 +97,7 @@ function AssignmentList({ listType }) {
     if (assignments === null) return <AssignmentListSkeleton count={1} />;
 
     return (
-        <div className="container px-1 my-1 cc-assignments">
+        <div className="container px-1 my-1">
 
             {assignments.length === 0 ? (
                 <h6 className="text-light text-center">No {listType} Assignments</h6>
@@ -112,10 +106,10 @@ function AssignmentList({ listType }) {
                 assignments.map((assignment, index) => (
                     <div key={index} className="row my-3 w-100">
                         <div className="col">
-                            <div className="card">
+                            <div className="card bg-dark text-light">
 
                                 {/* HEADER */}
-                                <div className="card-header d-flex align-items-center">
+                                <div className="card-header d-flex align-items-center bg-secondary text-light border-secondary">
                                     <small className="text-muted">{assignment.PostedBy.Name}</small>
 
                                     <h5 className="text-center mb-0 flex-grow-1">
@@ -161,7 +155,7 @@ function AssignmentList({ listType }) {
                                 </div>
 
                                 {/* FOOTER */}
-                                <div className="card-footer d-flex justify-content-between align-items-center">
+                                <div className="card-footer d-flex justify-content-between align-items-center bg-dark border-secondary">
 
                                     {/* QUESTIONS DROPDOWN using correct Question.js routes */}
                                     <Dropdown>
@@ -169,22 +163,13 @@ function AssignmentList({ listType }) {
                                             Questions: {assignment.Questions.length}
                                         </Dropdown.Toggle>
 
-                                        <Dropdown.Menu className="bg-dark text-white">
+                                        <Dropdown.Menu className="dropdown-menu-dark">
                                             {assignment.Questions.map((q, i) => {
                                                 const qId = q._id || q;
                                                 return (
                                                     <Dropdown.Item
                                                         key={qId || `q-${i}`}
-                                                        className="text-white"
-                                                        onClick={() => {
-                                                            // Students → Public
-                                                            // Professors → Full
-                                                            const type = listType === "Pending" || listType === "Submitted"
-                                                                ? "Public"
-                                                                : "Full";
-
-                                                            window.location.href = `/Question/${type}/${qId}`;
-                                                        }}
+                                                        href={`/Question/Public/${qId}`}
                                                     >
                                                         {i + 1}. {questionNames[qId] || "Loading..."}
                                                     </Dropdown.Item>
@@ -197,7 +182,7 @@ function AssignmentList({ listType }) {
                                     {listType === "Pending" && (
                                         <a
                                             href={`/students/solveAssignment/${assignment._id}`}
-                                            className="btn btn-success btn-sm"
+                                            className="btn btn-success"
                                         >
                                             Solve
                                         </a>

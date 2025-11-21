@@ -10,12 +10,6 @@ import { convertIsoToNormalTime, getTimeElapsed } from '../../Scripts/TimeFuncti
 import NavbarWithProfileAndSidebar from '../../components/Navbar/NavbarWithProfileAndSidebar';
 import { Card, Row, Col } from 'react-bootstrap';
 
-//type can be Public or Full
-//if type is public then only the question details will be displayed
-//if type is full then the question details along with the answer and hidden testcases will be displayed
-//the server will return the full question details only if the user is a professor
-//the server will return the public question details only if the user is a student
-
 function Question() {
 
     const { _id } = useParams();

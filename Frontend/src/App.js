@@ -21,6 +21,7 @@ const NavLinks = ["/professors/assignments", "/professors/addQuestion", "/profes
 function App() {
   return (
     <>
+      
       <ToastContainer />
       <BrowserRouter>
         <Routes>
