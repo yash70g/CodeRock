@@ -12,46 +12,12 @@ let DefaultUserCode =
    `#include <bits/stdc++.h>
 using namespace std;
 
-struct Node {
-    int data;
-    Node* left;
-    Node* right;
-    Node(int val) : data(val), left(NULL), right(NULL) {}
-};
 
-//Complete  YOUR FUNCTION HERE
-int func(Node *root){return 0;}
-Node* buildTree(vector<int>& nodes) { //Only change when needed 
-    if (nodes.empty()) return NULL;
-    Node* root = new Node(nodes[0]);
-    queue<Node*> q;
-    q.push(root);
-    int i = 1;
-    while (!q.empty() && i < nodes.size()) {
-        Node* curr = q.front();
-        q.pop();
-        if (i < nodes.size() && nodes[i] != -1) { 
-            curr->left = new Node(nodes[i]);
-            q.push(curr->left);
-        }
-        i++;
-        if (i < nodes.size() && nodes[i] != -1) {
-            curr->right = new Node(nodes[i]);
-            q.push(curr->right);
-        }
-        i++;
-    }
-    return root;
-}
+//WRITE YOUR FUNCTION HERE
+
 
 int main() {
-    int n;
-    cin >> n;
-    vector<int> arr(n);
-    for (int i = 0; i < n; i++) cin >> arr[i];
-    Node* root = buildTree(arr);
-
-    cout << func(root); //function call
+    //Complete Your Function
     return 0;
 }`
 

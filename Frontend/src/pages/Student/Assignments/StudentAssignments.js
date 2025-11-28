@@ -2,7 +2,6 @@ import NavbarWithProfileAndSidebar from "../../../components/Navbar/NavbarWithPr
 import PlainNavbar from "../../../components/Navbar/PlainNavbar";
 import StudentAssignmentNavtabs from "./StudentAssignmentNavtabs";
 
-
 function StudentAssignments() {
   return (
     <>
