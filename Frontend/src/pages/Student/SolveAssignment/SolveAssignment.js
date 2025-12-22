@@ -46,23 +46,17 @@ function SolveAssignment() {
                     toast.success(response.data.message);
                     setAssignmentDetails(response.data.Assignment);
 
-                    // Try to load saved user codes from localStorage for this assignment
-                    const lsKey = `newp_usercodes:${response.data.Assignment._id}`;
-                    let savedMap = {};
-                    try {
-                        const parsed = JSON.parse(localStorage.getItem(lsKey) || "{}");
-                        if (parsed && typeof parsed === 'object') savedMap = parsed;
-                    } catch (e) {
-                        // ignore parse errors
-                    }
-
                     const defaultSolutionCodes = response.data.Assignment.Questions.map((question) => {
+                        // Restore from localStorage if present for this assignment+question
+                        const storageKey = `assignment_${_id}_question_${question._id}`;
+                        const savedCode = (typeof localStorage !== 'undefined') ? localStorage.getItem(storageKey) : null;
                         return {
                             QuestionName: question.QuestionName,
-                            UserCode: savedMap[question._id] || DefaultUserCode,
+                            UserCode: savedCode !== null ? savedCode : DefaultUserCode,
                             QuestionId: question._id
                         };
                     });
+
                     setUserCodes(defaultSolutionCodes);
 
                 } else {
@@ -74,23 +68,6 @@ function SolveAssignment() {
         }
         FetchAssignment();
     }, []);
-
-    // Persist user code changes to localStorage so code survives refreshes
-    // Keyed by assignment id: { questionId: code }
-    useEffect(() => {
-        if (!_id || !UserCodes || UserCodes.length === 0) return;
-        const lsKey = `newp_usercodes:${_id}`;
-        const map = {};
-        try {
-            UserCodes.forEach(uc => {
-                if (uc && uc.QuestionId) map[uc.QuestionId] = uc.UserCode || "";
-            });
-            localStorage.setItem(lsKey, JSON.stringify(map));
-        } catch (e) {
-            // ignore localStorage errors
-            console.error('Failed to persist user codes to localStorage', e);
-        }
-    }, [UserCodes, _id]);
 
     if (AssignmentDetails === null) {
         return <LoadingSpinner />

@@ -55,6 +55,19 @@ function SolveQuestion({ Questions, AssignmentId, UserCodes, setUserCodes, AIAss
         const updatedUserCodes = [...UserCodes];
         updatedUserCodes[currentQuestionIndex].UserCode = code;
         setUserCodes(updatedUserCodes);
+
+        // Persist the current code to localStorage for this assignment+question
+        try {
+            const q = Questions && Questions[currentQuestionIndex];
+            const qid = q && q._id;
+            if (AssignmentId && qid && typeof localStorage !== 'undefined') {
+                const storageKey = `assignment_${AssignmentId}_question_${qid}`;
+                localStorage.setItem(storageKey, code);
+            }
+        } catch (e) {
+            // ignore storage errors (e.g., private mode)
+            console.warn('Could not persist code to localStorage', e);
+        }
     };
 
     useEffect(() => {
