@@ -401,6 +401,17 @@ async function EvaluateAssignment(ws, req) {
                             QuestionId: req.Assignment.Questions[i]._id,
                             ScoreObtained: result ? result.ScoreObtained : 0,
                             TotalScore: result ? result.TotalScore : (req.Assignment.Questions[i].TestCases.length + (req.Assignment.Questions[i].RandomTestChecked ? 1 : 0)),
+                            TestCaseResults: result && result.Details ? result.Details.map(d => ({
+                                testcaseIndex: d.testcaseIndex,
+                                input: d.input,
+                                solOutput: d.solOutput,
+                                stuOutput: d.stuOutput,
+                                solError: d.solError,
+                                stuError: d.stuError,
+                                different: d.different,
+                                success: d.success,
+                                compareError: d.compareError
+                            })) : []
                         });
 
                         ws.send(JSON.stringify({
