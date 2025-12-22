@@ -3,11 +3,10 @@ import CharacterCounter from "../../../components/CommonComponents/CharacterCoun
 import { useRef } from 'react';
 
 
-
-
-function TestCase({ index, toggleSample, name, isChecked, input, updateTestcase }) {
+function TestCase({ index, toggleSample, name, isChecked, input, output, updateTestcase }) {
 
     const textAreaRef = useRef(null);
+    const outputRef = useRef(null);
 
     return (
         <Form.Group controlId={`inputTestcase${index + 1}`}>
@@ -20,17 +19,34 @@ function TestCase({ index, toggleSample, name, isChecked, input, updateTestcase 
                 onChange={() => toggleSample(index)} // Added onChange handler
                 className="mb-3"
             />
+
+            <Form.Label>{`${name} Input`}</Form.Label>
             <Form.Control
                 as="textarea"
-                placeholder={name}
+                placeholder={`${name} Input`}
                 maxLength={200}
                 value={input}
-                onChange={(e) => updateTestcase(index, e.target.value)} // Added onChange handler
+                onChange={(e) => updateTestcase(index, 'input', e.target.value)} // Added onChange handler
                 ref={textAreaRef}
             />
             <CharacterCounter
                 maxLength={200}
                 textAreaRef={textAreaRef}
+                fontColor="white"
+            />
+
+            <Form.Label className="mt-3">{`${name} Output`}</Form.Label>
+            <Form.Control
+                as="textarea"
+                placeholder={`${name} Output`}
+                maxLength={200}
+                value={output}
+                onChange={(e) => updateTestcase(index, 'output', e.target.value)}
+                ref={outputRef}
+            />
+            <CharacterCounter
+                maxLength={200}
+                textAreaRef={outputRef}
                 fontColor="white"
             />
         </Form.Group>

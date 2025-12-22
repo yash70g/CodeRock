@@ -5,7 +5,6 @@ import { Form, Nav, Tab } from "react-bootstrap";
 import DescriptionTab from "./NavTabs/DescriptionTab";
 import CodeTab from "./NavTabs/CodeTab/CodeTab";
 import TestcasesTab from "./NavTabs/TestcasesTab";
-import PreviewTab from "./NavTabs/PreviewTab";
 import { fetchData } from "../../../Scripts/Axios";
 import { useParams } from "react-router-dom";
 import LoadingSpinner from "../../../components/Spinners/Spinners";
@@ -106,10 +105,7 @@ function ProfessorAddQuestion({ activeTab, NavTabs = [], NavLinks = [], editQues
               <Nav.Item>
                 <Nav.Link eventKey="TestCases" style={{ fontSize: "20px" }}>TestCases</Nav.Link>
               </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="Preview" style={{ fontSize: "20px" }}>Preview</Nav.Link>
-              </Nav.Item>
-            </Nav>
+            </Nav> 
             <Form>
               <Tab.Content>
                 <Tab.Pane eventKey="Description" style={{ color: "white" }}>
@@ -119,14 +115,18 @@ function ProfessorAddQuestion({ activeTab, NavTabs = [], NavLinks = [], editQues
                   <CodeTab formData={formData} handleInputChange={handleInputChange} />
                 </Tab.Pane>
                 <Tab.Pane eventKey="TestCases">
-                  <TestcasesTab TestCases={formData.TestCases.map(testCase => {
-                    const { _id, ...testCaseWithoutId } = testCase;
-                    return testCaseWithoutId;
-                  })} handleInputChange={handleInputChange} />
-                </Tab.Pane>
-                <Tab.Pane eventKey="Preview">
-                  <PreviewTab formData={formData} FormMetaData={FormMetaData} editQuestion={editQuestion} _id={_id} />
-                </Tab.Pane>
+                  <TestcasesTab
+                    TestCases={formData.TestCases.map(testCase => {
+                      const { _id, ...testCaseWithoutId } = testCase;
+                      return testCaseWithoutId;
+                    })}
+                    handleInputChange={handleInputChange}
+                    formData={formData}
+                    FormMetaData={FormMetaData}
+                    editQuestion={editQuestion}
+                    _id={_id}
+                  />
+                </Tab.Pane> 
               </Tab.Content>
             </Form>
           </Tab.Container>
