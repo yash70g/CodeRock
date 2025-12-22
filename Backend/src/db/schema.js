@@ -63,7 +63,7 @@ const QuestionSchema = new mongoose.Schema({
     TestCases: [{
         input: { type: String, required: true },
         sampleTestCase: { type: Boolean, required: true },
-        // output:{type:String, required: true}
+        output: {type:String, required: true}
     }],
     RandomTestChecked: { type: Boolean, required: true },
     CreatedBy: { type: mongoose.Schema.Types.ObjectId, required: true },
@@ -122,6 +122,18 @@ const SubmitAssignmentsSchema = new mongoose.Schema({
         QuestionId: { type: mongoose.Schema.Types.ObjectId, required: true },
         ScoreObtained: { type: Number, required: true }, // Default score set to 0
         TotalScore: { type: Number, required: true },
+        // Detailed per-testcase results for audit / later retrieval
+        TestCaseResults: [{
+            testcaseIndex: { type: Number, required: true },
+            input: { type: String, required: true },
+            solOutput: { type: String, required: false },
+            stuOutput: { type: String, required: false },
+            solError: { type: String, required: false },
+            stuError: { type: String, required: false },
+            different: { type: Boolean, required: true },
+            success: { type: Boolean, required: true },
+            compareError: { type: String, required: false }
+        }],
     }],
     SubmittedOn: { type: Date, required: true },
     ScoreObtained: { type: Number, required: true },

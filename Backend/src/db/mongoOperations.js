@@ -8,7 +8,7 @@ async function connectDB() {
 
         for (let i = 0; i < databaseNames.length; i++) {
             const DBconnectionString = `mongodb://localhost:27017/${databaseNames[i]}`;
-            const connection = await mongoose.createConnection(DBconnectionString, { useNewUrlParser: true, useUnifiedTopology: true },{maxPoolSize: 50, minPoolSize: 10});
+            const connection = await mongoose.createConnection(DBconnectionString, { useNewUrlParser: true, useUnifiedTopology: true ,maxPoolSize: 50, minPoolSize: 10});
             connections[databaseNames[i]] = connection;
             console.log(`Connected to ${databaseNames[i]} database Successfully!`);
         }
