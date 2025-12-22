@@ -11,7 +11,7 @@ const { ValidateToken, isStudent, isProfessor, ValidateWsToken, isProfessorWs, i
 const { registerCollegeRoute, registeredCollegeRoute } = require("./other/Colleges");
 const { getStudentPendingAssignmentsRoute, getStudentSubmittedAssignmentsRoute, getStudentMissedAssignmentsRoute, getThisPendingAssignment } = require("./Student/Assignments");
 const { getProfessorAssignmentsRoute, getBatchesRoute, getMyQuestionsRoute, getOtherQuestionsRoute, createAssignmentRoute, deleteAssignmentRoute } = require("./Professor/Assignments.js");
-const { ValidateSolutionCode, ValidateRandomTestCaseCode, createQuestionRoute, updateQuestionRoute, checkIfQuestionIsCreatedByThisProfessor, FetchFullQuestionDetailsRoute, checkIfQuestionExists, CheckIfAddedInAnyAssignment, deleteQuestionRoute } = require("./Professor/Question.js");
+const { ValidateSolutionCode, ValidateRandomTestCaseCode, createQuestionRoute, updateQuestionRoute, checkIfQuestionIsCreatedByThisProfessor, FetchFullQuestionDetailsRoute, checkIfQuestionExists, CheckIfAddedInAnyAssignment, deleteQuestionRoute, generateTestcaseOutputsRoute } = require("./Professor/Question.js");
 const { ValidateInputs, CheckQuestionInAssignment, findQuestion, ValidateTestCases, RunOutputComparison } = require("./Student/Submission.js");
 const { ValidateAssignmentId, FindAssignment, ValidateQuestionsInAssignment, CheckIfAllowedToSubmit, EvaluateAssignment } = require("./Student/Assignments.js");
 const { CheckAssignment, getSubmissions, analyzeSubmission, CheckSubmission, unsubmitAssignment } = require("./Professor/Submissions.js");
@@ -53,6 +53,7 @@ app.delete("/professors/deleteAssignment/:_id", ValidateToken, isProfessor, dele
 app.delete("/professors/deleteQuestion/:_id", ValidateToken, isProfessor, checkIfQuestionExists, CheckIfAddedInAnyAssignment, deleteQuestionRoute);                //Deletes a question, called when the professor clicks on the bin button of a question
 app.post("/professors/createQuestion", ValidateToken, isProfessor, createQuestionRoute);                        //Creates a Question
 app.put("/professors/updateQuestion", ValidateToken, isProfessor, checkIfQuestionIsCreatedByThisProfessor, updateQuestionRoute);                        //Updates a Question
+app.post("/professors/generateTestcaseOutputs", ValidateToken, isProfessor, checkIfQuestionIsCreatedByThisProfessor, generateTestcaseOutputsRoute); //Generate and save testcase outputs using SolutionCode (backfill)
 app.get("/professors/viewSubmissions/:_id", ValidateToken, CheckAssignment, getSubmissions);                    //Fetches the submissions of an assignment with the given id(assignment Id), called when the professor/student clicks on the submissions button of an assignment
 app.get("/professors/analyzeSubmission/:_id", ValidateToken, isProfessor, analyzeSubmission);                   //Fetches the submissions of an assignment with the given id(assignment Id), called when the professor clicks on the submissions button of an assignment
 
