@@ -30,7 +30,7 @@ function registerCollegeRoute(req, res) {
     console.log(req.body);
     const { CollegeName, Name, Email, PhoneNo } = req.body;
 
-    writeDB("Colleges", "Requested", { CollegeName: CollegeName, Name: Name, Email: Email, PhoneNo: parseInt(PhoneNo) }, RequestedCollegesSchema).then((result) => {
+    writeDB("Colleges", "Requested", { CollegeName: CollegeName, Name: Name, Email: Email, PhoneNo: PhoneNo }, RequestedCollegesSchema).then((result) => {
         res.json({
             success: true,
             message: "Registration Request sent successfully! We will contact you soon.",

@@ -30,7 +30,7 @@ const registeredCollegesSchema = new mongoose.Schema({
 });
 
 const emailValidator = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneValidator = /^\d{10}$/;
+// const phoneValidator = /^\d{10}$/;
 
 const RequestedCollegesSchema = new mongoose.Schema({
     CollegeName: { type: String, required: true },
@@ -43,7 +43,6 @@ const RequestedCollegesSchema = new mongoose.Schema({
     PhoneNo: {
         type: String,
         required: true,
-        match: [phoneValidator, 'Invalid phone number'],
     },
 });
 
@@ -64,6 +63,7 @@ const QuestionSchema = new mongoose.Schema({
     TestCases: [{
         input: { type: String, required: true },
         sampleTestCase: { type: Boolean, required: true },
+        // output:{type:String, required: true}
     }],
     RandomTestChecked: { type: Boolean, required: true },
     CreatedBy: { type: mongoose.Schema.Types.ObjectId, required: true },
