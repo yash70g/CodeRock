@@ -362,4 +362,57 @@ async function updateQuestionRoute(req, res) {
 
 }
 
-module.exports = { ValidateSolutionCode, ValidateRandomTestCaseCode, createQuestionRoute, updateQuestionRoute, checkIfQuestionIsCreatedByThisProfessor, FetchFullQuestionDetailsRoute, checkIfQuestionExists, CheckIfAddedInAnyAssignment, deleteQuestionRoute };
+// Generate and save testcase outputs for a question using the solution code (useful for backfilling)
+async function generateTestcaseOutputsRoute(req, res) {
+    const questionId = req.body._id || req.params._id;
+    if (!questionId) {
+        res.status(400).send({ success: false, message: "Question id is required" });
+        return;
+    }
+
+    try {
+        // fetch the question
+        const Querry = { _id: questionId };
+        const data = await readDB("QuestionBank", req.decoded.Institution, Querry, QuestionSchema);
+        if (!data || data.length === 0) {
+            res.status(404).send({ success: false, message: "Question not found" });
+            return;
+        }
+
+        const question = data[0];
+        if (!Array.isArray(question.TestCases) || question.TestCases.length === 0) {
+            res.status(400).send({ success: false, message: "Question has no testcases" });
+            return;
+        }
+
+        // For each testcase that has empty or missing output, run solution code to generate output
+        for (let i = 0; i < question.TestCases.length; i++) {
+            const tc = question.TestCases[i];
+            if (typeof tc.output === 'string' && tc.output.trim() !== '') {
+                continue; // already has output
+            }
+
+            const input = String(tc.input || "");
+            try {
+                const response = await RunCpp(question.SolutionCode || "", input, 5);
+                if (response && response.success) {
+                    question.TestCases[i].output = String(response.output || "");
+                } else {
+                    // Save an error marker so professor can see this
+                    question.TestCases[i].output = `__ERROR__:${response ? (response.message || response.verdict || 'Execution Failed') : 'Execution Failed'}`;
+                }
+            } catch (e) {
+                question.TestCases[i].output = `__ERROR__:${e.message}`;
+            }
+        }
+
+        // persist updated question
+        await updateDB("QuestionBank", req.decoded.Institution, { _id: questionId }, question, QuestionSchema);
+        res.send({ success: true, message: "Testcase outputs generated and saved", Question: question });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({ success: false, message: `Failed to generate testcase outputs: ${error.message}` });
+    }
+}
+
+module.exports = { ValidateSolutionCode, ValidateRandomTestCaseCode, createQuestionRoute, updateQuestionRoute, checkIfQuestionIsCreatedByThisProfessor, FetchFullQuestionDetailsRoute, checkIfQuestionExists, CheckIfAddedInAnyAssignment, deleteQuestionRoute, generateTestcaseOutputsRoute };
