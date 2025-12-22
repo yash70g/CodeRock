@@ -1,20 +1,37 @@
 const axios = require('axios');
-const fs = require('fs'); // keep for DeleteAfterExecution compatibility
+const fs = require('fs');
 const path = require('path');
 
 function DeleteAfterExecution(...filePaths) {
-    filePaths.forEach(filePath => {
-        fs.unlink(filePath, (err) => {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    console.log(`File ${filePath} does not exist`);
-                } else {
-                    console.log(`Error occurred while deleting the ${filePath} file, err : ${err}`);
+
+    const attempts = 5;
+    const delayMs = 200;
+    const unlinkWithRetry = async (filePath) => {
+        if (!filePath) return;
+        const p = path.resolve(filePath);
+        for (let i = 0; i < attempts; i++) {
+            try {
+                await fs.promises.unlink(p);
+                if (process.env.NODE_ENV !== 'test') console.log(`Successfully deleted the ${p} file`);
+                return;
+            } catch (err) {
+                if (err && err.code === 'ENOENT') {
+
+                    return;
                 }
-            } else {
-                console.log(`Successfully deleted the ${filePath} file`);
+                if (i === attempts - 1) {
+                    if (process.env.NODE_ENV !== 'test') console.log(`Error occurred while deleting the ${p} file after ${attempts} attempts, err : ${err}`);
+                } else {
+
+                    await new Promise(r => setTimeout(r, delayMs));
+                }
             }
-        });
+        }
+    };
+
+
+    filePaths.forEach(fp => {
+        unlinkWithRetry(fp).catch(err => console.log(`Unexpected error while deleting ${fp}: ${err}`));
     });
 }
 
@@ -23,7 +40,7 @@ const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPIDAPI_KEY;
 const JUDGE0_HOST = 'judge0-ce.p.rapidapi.com';
 
 function ensureJudge0Url(url) {
-    // Ensure wait=true and base64_encoded=true in URL query
+
     try {
         const u = new URL(url);
         u.searchParams.set('wait', 'true');
@@ -61,7 +78,7 @@ async function RunCpp(code, input = "", TimeLimit = 5) {
         const payload = {
             source_code: b64EncodeSafe(code || ""),
             stdin: b64EncodeSafe(input || ""),
-            language_id: 52, // C++ (GCC). adjust if needed
+            language_id: 52,
             cpu_time_limit: TimeLimit
         };
 
@@ -82,7 +99,7 @@ async function RunCpp(code, input = "", TimeLimit = 5) {
         const resp = await axios.post(JUDGE0_URL, payload, axiosConfig);
         const result = resp.data || {};
 
-        // When base64_encoded=true Judge0 returns base64 strings for stdout/stderr/compile_output
+
         const statusId = result && result.status && result.status.id;
         const rawStdout = result.stdout || "";
         const rawStderr = result.stderr || "";

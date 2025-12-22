@@ -55,18 +55,51 @@ async function CompareOutputs(ws, solutionCodeResponse, studentCodeResponse, Run
         return { success: false, error: `Internal Server Error while comparing outputs of ${RunOn}: ${e.message}` };
     }
 }
-async function RunAndCompare(ws, SolutionCode, StudentCode, TestCase, RunOn, QuestionPlaceHolder = "") {
-    let solutionCodeResponse = await RunCode(ws, SolutionCode, TestCase, "Solution", RunOn);
+async function RunAndCompare(ws, SolutionCode, StudentCode, TestCaseObj, RunOn, QuestionPlaceHolder = "") {
+
+
+    let solutionCodeResponse;
+    if (TestCaseObj && typeof TestCaseObj.output === 'string' && TestCaseObj.output !== '') {
+        // Use stored testcase output as the expected output
+        solutionCodeResponse = { success: true, output: String(TestCaseObj.output) };
+    } else {
+        // Fallback: run solution code to generate expected output (backwards compatibility)
+        solutionCodeResponse = await RunCode(ws, SolutionCode, TestCaseObj && TestCaseObj.input ? TestCaseObj.input : TestCaseObj, "Solution", RunOn);
+    }
+
     if (solutionCodeResponse === undefined) return undefined;
-    let studentCodeResponse = await RunCode(ws, StudentCode, TestCase, "Student", RunOn);
+
+    let studentCodeResponse = await RunCode(ws, StudentCode, TestCaseObj && TestCaseObj.input ? TestCaseObj.input : TestCaseObj, "Student", RunOn);
     if (studentCodeResponse === undefined) return undefined;
 
+
+    const indexMatch = String(RunOn || '').match(/\d+/);
+    const testcaseIndexNum = indexMatch ? parseInt(indexMatch[0], 10) : null;
+
+    const resDetails = {
+        testcaseIndex: testcaseIndexNum,
+        testcaseLabel: RunOn,
+        input: TestCaseObj && TestCaseObj.input ? String(TestCaseObj.input) : "",
+        solOutput: solutionCodeResponse.success ? String(solutionCodeResponse.output || "") : null,
+        stuOutput: studentCodeResponse.success ? String(studentCodeResponse.output || "") : null,
+        solError: solutionCodeResponse.success ? null : (solutionCodeResponse.message || solutionCodeResponse.verdict || null),
+        stuError: studentCodeResponse.success ? null : (studentCodeResponse.message || studentCodeResponse.verdict || null),
+        different: null,
+        success: false,
+        compareError: null,
+        reason: null
+    };
+
     if (solutionCodeResponse.success === false) {
-        return { ok: false, reason: "solution_failed", message: solutionCodeResponse.message || solutionCodeResponse.verdict };
+        resDetails.success = false;
+        resDetails.reason = "solution_failed";
+        return { ok: false, ...resDetails };
     }
 
     if (studentCodeResponse.success === false) {
-        return { ok: false, reason: "student_error", message: studentCodeResponse.message || studentCodeResponse.verdict };
+        resDetails.success = false;
+        resDetails.reason = "student_error";
+        return { ok: false, ...resDetails };
     }
 
     try {
@@ -88,13 +121,20 @@ async function RunAndCompare(ws, SolutionCode, StudentCode, TestCase, RunOn, Que
         const cmp = await compareTextFilesLineByLine(solFile, stuFile);
 
         if (!cmp || cmp.success === false) {
-            return { ok: false, reason: "compare_error", message: cmp && cmp.error ? cmp.error : "Comparison failed" };
+            resDetails.success = false;
+            resDetails.reason = "compare_error";
+            resDetails.compareError = cmp && cmp.error ? cmp.error : "Comparison failed";
+            return { ok: false, ...resDetails };
         }
 
+        resDetails.different = !!cmp.different;
+        resDetails.success = !cmp.different && solutionCodeResponse.success;
+
         if (cmp.different === true) {
-            return { ok: false, reason: "wrong_answer" };
+            resDetails.reason = "wrong_answer";
+            return { ok: false, ...resDetails };
         } else {
-            return { ok: true };
+            return { ok: true, ...resDetails };
         }
     } catch (e) {
         return { ok: false, reason: "compare_exception", message: e.message || String(e) };
@@ -115,16 +155,20 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
     let PassedAllTestCases = true;
     let TotalScore = 0;
     let ScoreObtained = 0;
+    let Details = [];
 
     for (let i = 0; i < Question.TestCases.length; i++) {
         const runOn = `Testcase ${i + 1}`;
-        let res = await RunAndCompare(ws, Question.SolutionCode, CodeToRun, Question.TestCases[i].input, runOn, Question.QuestionName);
+        let res = await RunAndCompare(ws, Question.SolutionCode, CodeToRun, Question.TestCases[i], runOn, Question.QuestionName);
         if (res === undefined) {
             if (ws && typeof ws.send === "function") {
                 ws.send(JSON.stringify({ success: false, message: `Internal error while evaluating ${runOn}`, type: `output` }));
             }
             return;
         }
+
+        // collect per-testcase result
+        Details.push(res);
 
         TotalScore += 1;
         if (res.ok === true) {
@@ -145,6 +189,7 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
                 TotalScore,
                 ScoreObtained,
                 Question: Question.QuestionName,
+                Details
             })
         );
     }
@@ -152,6 +197,7 @@ async function EvaluateQuestion(ws, Question, CodeToRun) {
     return {
         TotalScore,
         ScoreObtained,
+        Details
     };
 }
 

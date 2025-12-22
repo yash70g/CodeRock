@@ -65,10 +65,16 @@ async function evaluateAndCompareQuestion(Question, StudentCode, timeLimitSecond
         const input = String(tc.input || "");
         TotalScore += 1;
 
-        const [solResp, stuResp] = await Promise.all([
-            RunCpp(Question.SolutionCode || "", input, timeLimitSeconds),
-            RunCpp(StudentCode || "", input, timeLimitSeconds)
-        ]);
+        let solResp;
+        if (tc && typeof tc.output === 'string' && tc.output !== '') {
+    
+            solResp = { success: true, output: String(tc.output) };
+        } else {
+
+            solResp = await RunCpp(Question.SolutionCode || "", input, timeLimitSeconds);
+        }
+
+        const stuResp = await RunCpp(StudentCode || "", input, timeLimitSeconds);
 
         const safe = (s = "") => String(s).replace(/[^a-z0-9_\-]/gi, '_').slice(0, 40) || 'file';
         const uniq = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -105,7 +111,7 @@ async function evaluateAndCompareQuestion(Question, StudentCode, timeLimitSecond
         try {
             cmp = await compareTextFilesLineByLine(solFile, stuFile);
         } catch (cmpErr) {
-            // ensure cleanup
+
             try { DeleteAfterExecution(solFile, stuFile); } catch (_) {}
             details.push({
                 testcaseIndex: i,
