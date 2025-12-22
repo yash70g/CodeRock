@@ -51,6 +51,12 @@ function SubmitAssignmentModal({ _id, UserCodes }) {
             if (expected === 0) return;
             const decisionsCount = verdictAndDecision.filter(r => r.type === 'Decision' || r.type === 'Verdict').length;
             if (decisionsCount >= expected) {
+                // Clear persisted user codes for this assignment on successful submission
+                try {
+                    localStorage.removeItem(`newp_usercodes:${_id}`);
+                } catch (e) {
+                    // ignore
+                }
                 navigate('/students/assignments');
                 handleCloseModal();
             }
