@@ -14,9 +14,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Define build-time variables for Backend
-ARG BACKEND_PORT
+ARG PORT
 ARG CORS_ORIGIN
-ARG JWT_SECRET
+ARG JWT_SECRET_KEY
 ARG JUDGE0_URL
 ARG DB_USERNAME
 ARG DB_PASSWORD
@@ -26,10 +26,10 @@ ARG MEMORY_LIMIT
 ARG GEMINI_API_KEY
 
 # Set environment variables using build-time variables
-ENV PORT=${BACKEND_PORT:-8080}
-ENV BACKEND_PORT=${BACKEND_PORT:-8080}
+ENV PORT=${PORT:-8080}
+ENV PORT=${PORT:-8080}
 ENV CORS_ORIGIN=${CORS_ORIGIN}
-ENV JWT_SECRET_KEY=${JWT_SECRET}
+ENV JWT_SECRET_KEY=${JWT_SECRET_KEY}
 ENV JUDGE0_URL=${JUDGE0_URL}
 ENV DB_USERNAME=${DB_USERNAME}
 ENV DB_PASSWORD=${DB_PASSWORD}
@@ -56,8 +56,8 @@ COPY Frontend/ ./Frontend
 
 # Build Frontend
 WORKDIR /app/Frontend
-RUN echo "REACT_APP_SERVER_URL=http://localhost:${BACKEND_PORT}" >> .env && \
-    echo "REACT_APP_SERVER_WS_URL=ws://localhost:${BACKEND_PORT}" >> .env && \
+RUN echo "REACT_APP_SERVER_URL=http://localhost:${PORT}" >> .env && \
+    echo "REACT_APP_SERVER_WS_URL=ws://localhost:${PORT}" >> .env && \
     npm install && \
     npm run build && \
     cp -r /app/Frontend/build /app/build
@@ -89,7 +89,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose ports
 # Backend API port
-EXPOSE ${BACKEND_PORT:-8080}
+EXPOSE ${PORT:-8080}
 # Judge0 server port (if needed)
 EXPOSE 2358
 

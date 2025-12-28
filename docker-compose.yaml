@@ -7,7 +7,7 @@ x-logging: &default-logging
       max-size: 100M
 
 services:
-  codecolosseum:
+  coderoom:
     build:
       context: .
       dockerfile: Dockerfile

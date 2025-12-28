@@ -6,10 +6,10 @@ async function connectDB() {
         const databaseNames = ['Assignments', 'Colleges', 'Professors', 'QuestionBank', 'Students', 'Evaluations', "AssignmentSubmissions", "EvaluationSubmissions"];
         // const databaseNames = ['Assignments', 'Colleges', 'Professors', 'QuestionBank', 'Students'];
 
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/';
         
         for (let i = 0; i < databaseNames.length; i++) {
-            const DBconnectionString = `${mongoUri}/${databaseNames[i]}`;
+            const DBconnectionString = `${mongoUri}${databaseNames[i]}`;
             const connection = await mongoose.createConnection(DBconnectionString, { useNewUrlParser: true, useUnifiedTopology: true ,maxPoolSize: 50, minPoolSize: 10});
             connections[databaseNames[i]] = connection;
             console.log(`Connected to ${databaseNames[i]} database Successfully!`);
