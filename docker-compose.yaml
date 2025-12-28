@@ -1,0 +1,143 @@
+version: '3.8'
+
+x-logging: &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 100M
+
+services:
+  codecolosseum:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BACKEND_PORT: ${BACKEND_PORT:-8091}
+        CORS_ORIGIN: ${CORS_ORIGIN}
+        JWT_SECRET: ${JWT_SECRET_KEY}
+        JUDGE0_URL: http://judge0-server:2358/submissions?base64_encoded=true&wait=true
+        DB_USERNAME: ${DB_USERNAME}
+        DB_PASSWORD: ${DB_PASSWORD}
+        MONGODB_URI: mongodb://root:mongoadmin@mongodb:27017/?authSource=admin
+        PING_BOT_DURATION: ${PING_BOT_DURATION:-300000}
+        MEMORY_LIMIT: ${MEMORY_LIMIT:-31457280}
+        GEMINI_API_KEY: ${GEMINI_API_KEY}
+    environment:
+      - PORT=${BACKEND_PORT:-8091}
+      - BACKEND_PORT=${BACKEND_PORT:-8091}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JUDGE0_URL=http://judge0-server:2358/submissions?base64_encoded=true&wait=true
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASS=${DB_PASSWORD}
+      - MONGODB_URI=mongodb://root:mongoadmin@mongodb:27017/?authSource=admin
+      - PING_BOT_DURATION=${PING_BOT_DURATION:-300000}
+      - MEMORY_LIMIT=${MEMORY_LIMIT:-31457280}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "${BACKEND_PORT:-8091}:${BACKEND_PORT:-8091}"
+      - "2358:2358"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      judge0-server:
+        condition: service_started
+    networks:
+      - app-network
+    <<: *default-logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT:-8091}/registeredColleges"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Judge0 Server
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    expose:
+      - "2358"
+    privileged: true
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-judge0_redis_pass}
+      - POSTGRES_USER=${POSTGRES_USER:-judge0}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-judge0_db_pass}
+
+  # PostgreSQL Database for Judge0
+  db:
+    image: postgres:16.2
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-judge0}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-judge0_db_pass}
+      POSTGRES_DB: judge0
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-judge0}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache for Judge0
+  redis:
+    image: redis:7.2.4
+    command: >
+      bash -c 'docker-entrypoint.sh --appendonly no --requirepass "${REDIS_PASSWORD:-judge0_redis_pass}"'
+    <<: *default-logging
+    restart: unless-stopped
+    networks:
+      - app-network
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-judge0_redis_pass}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-judge0_redis_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for Backend Application Data
+  mongodb:
+    image: mongo:7.0
+    restart: unless-stopped
+    networks:
+      - app-network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongoadmin
+    volumes:
+      - mongo_data:/data/db
+    <<: *default-logging
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+networks:
+  app-network:
+    driver: bridge

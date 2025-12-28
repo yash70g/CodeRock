@@ -35,9 +35,7 @@ function DeleteAfterExecution(...filePaths) {
     });
 }
 
-const RAW_JUDGE0_URL = process.env.JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com/submissions';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPIDAPI_KEY;
-const JUDGE0_HOST = 'judge0-ce.p.rapidapi.com';
+const RAW_JUDGE0_URL = process.env.JUDGE0_URL || 'http://judge0-server:2358/submissions';
 
 function ensureJudge0Url(url) {
 
@@ -86,10 +84,7 @@ async function RunCpp(code, input = "", TimeLimit = 5) {
             'Content-Type': 'application/json'
         };
 
-        if (RAPIDAPI_KEY) {
-            headers['X-RapidAPI-Key'] = RAPIDAPI_KEY;
-            headers['X-RapidAPI-Host'] = JUDGE0_HOST;
-        }
+        // No RapidAPI headers needed for self-hosted Judge0
 
         const axiosConfig = {
             headers,
