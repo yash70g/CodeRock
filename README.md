@@ -48,4 +48,4 @@ npm test
 - Testcases may include an explicit `output` field; when present it is used as the ground truth. Otherwise the solution code is executed to generate expected output (backfill route `POST /professors/generateTestcaseOutputs` is available).
 - Temp files used for comparisons are cleaned up automatically with retries to handle transient file locks (Windows).
 
-Thanks to @sakshamsahgal for the base architecture and workflows.
+Thanks to [@sakshamsahgal](https://github.com/SakshamSahgal) for the base architecture and workflows.
